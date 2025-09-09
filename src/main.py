@@ -76,7 +76,8 @@ class Main:
                 elif event.key == pygame.K_l:
                     self.looting_active = 0 if self.looting_active else pygame.time.get_ticks()
                     self.rumble_active, self.sf_active = 0, 0
-                elif event.key == pygame.K_0: # Pressing 0 removes the plank swabbie alert incase counter was opened part way through the CI
+                elif event.key in [pygame.K_0, pygame.K_KP0]: # Pressing either 0 removes the plank swabbie alert incase counter was opened part way through the CI
+                    print(F"TEST")
                     self.plank_swabbie = False
                     self.swabbies_on_board = 0
 

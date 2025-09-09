@@ -25,6 +25,8 @@ class Chatlogs:
 
         self.swabbies_on_board = 0
 
+        self.last_fray_loss_time = -10000
+
 
     def tail(self, path: Path, _buffer: int = 4098) -> list[str]:
         """Tail a file and get X lines from the end."""
@@ -157,8 +159,8 @@ class Chatlogs:
 
     
     def ci_chat_filter(self, main):
+        
         for line in self.new_lines:
-
             if line[11:] == self.island_land_string:
                 main.landed = True
                 main.overrun = False
@@ -167,39 +169,42 @@ class Chatlogs:
                 main.overrun = True
                 main.rumble_active = pygame.time.get_ticks() - main.configs.timer_offset
             
-            if main.overrun and line[11:20] == "Game over":
+            elif main.overrun and line[11:20] == "Game over":
                 main.overrun = False
-                main.rumble_active = False
+                main.rumble_active = 0
 
             elif main.frays_won == 0 and line[11:20] == "Game over":
                 main.swabbies_on_board = line.count(',') + 1 # Number of team members
                 non_pirate_count = line.count(' ') - 4 - main.swabbies_on_board # This should be the number of non humans
-                players_on_board = main.swabbies_on_board - non_pirate_count
+                main.players_on_board = main.swabbies_on_board - non_pirate_count
                 thralls_on_board = line.count('Thrall')
-                main.swabbies_on_board -= (thralls_on_board + players_on_board)
-                main.rumble_active = False
+                main.swabbies_on_board -= (thralls_on_board + main.players_on_board)
+                main.rumble_active = 0
 
-            if self.swabbies_on_board > 0:
+            elif self.swabbies_on_board > 0:
                 if "has left the vessel." in line: #TODO make better
                     main.swabbies_on_board -= 1
+                    main.plank_swabbie_check()
 
-            if line[11:23] in self.end_of_ci_fray_strings and not main.looting_active:
+            elif line[11:23] in self.end_of_ci_fray_strings and not main.looting_active:
+                if pygame.time.get_ticks() - self.last_fray_loss_time < 10000:
+                    continue # This is just the chests taken aboard after a loss.
                 main.frays_won += 1
-                main.looting_active = True
                 main.looting_active = pygame.time.get_ticks() - main.configs.timer_offset
                 main.rumble_active = 0
                 main.sf_active = 0
 
-            if line[11:34] == "The islanders reclaimed":
+            elif line[11:34] == "The islanders reclaimed":
                 main.rumble_active = 0
                 main.sf_active = 0
-                main.looting_active = False
+                main.looting_active = 0
+                self.last_fray_loss_time = pygame.time.get_ticks()
                 
             elif (line[11:33] == "Enlightened One says, "):
                 if not main.rumble_active:
                     main.rumble_active = pygame.time.get_ticks() + 17000 - main.configs.timer_offset
 
-            elif " Cultist shouts" in line and not (" says, \"" in line or " tells ye, '" in line): # Cultist can be named so can't use precise string location to avoid trolling.
+            elif " Cultist shouts" in line and not (" says, \"" in line or " tells ye, '" in line): # Cultist can be named so can't use precise string location to avoid trolling. #TODO improve
                 if not main.sf_active:
                     main.sf_active = pygame.time.get_ticks() + 17000 - main.configs.timer_offset
                     main.fray.reset_homun()
