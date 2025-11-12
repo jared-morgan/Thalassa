@@ -23,8 +23,6 @@ class Chatlogs:
         self.island_land_string = "Ye land on the island, but an angry mob of its inhabitants stands between ye and yer rightful plunderin'!"
         self.overrun_string = "Yer vessel be overrun with zombies! All hands join the fight to save the ship!"
 
-        self.swabbies_on_board = 0
-
         self.last_fray_loss_time = -10000
 
 
@@ -181,7 +179,7 @@ class Chatlogs:
                 main.swabbies_on_board -= (thralls_on_board + main.players_on_board)
                 main.rumble_active = 0
 
-            elif self.swabbies_on_board > 0:
+            elif main.swabbies_on_board > 0:
                 if "has left the vessel." in line: #TODO make better
                     main.swabbies_on_board -= 1
                     main.plank_swabbie_check()

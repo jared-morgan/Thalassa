@@ -2,7 +2,7 @@ import pygame
 from pathlib import Path
 import timeit
 
-from code.gui import GUI
+from code.old_gui import GUI
 from code.sounds import Sounds
 from code.configs import Configs
 from code.chatlogs import Chatlogs
@@ -77,7 +77,6 @@ class Main:
                     self.looting_active = 0 if self.looting_active else pygame.time.get_ticks()
                     self.rumble_active, self.sf_active = 0, 0
                 elif event.key in [pygame.K_0, pygame.K_KP0]: # Pressing either 0 removes the plank swabbie alert incase counter was opened part way through the CI
-                    print(F"TEST")
                     self.plank_swabbie = False
                     self.swabbies_on_board = 0
 
@@ -101,20 +100,19 @@ class Main:
 
     
     def plank_swabbie_check(self):
-        if self.swabbies_on_board == 0: 
+        self.plank_swabbie = False
+        if self.swabbies_on_board == 0:
             return
-        
-        player_count = self.players_on_board + self.swabbies_on_board
+        ally_count = self.players_on_board + self.swabbies_on_board
         try:
             max_players = self.maximum_players[self.frays_won]
         except:
             max_players = 2 # fray count larger than relevant indexes
     
-
-        if player_count > max_players:
-            self.plank_swabbie = True
-        else:
-            self.plank_swabbie = False
+        if ally_count <= max_players:
+            return
+        
+        self.plank_swabbie = True
 
         if self.plank_swabbie:
             # if (pygame.time.get_ticks() // self.plank_swabbie_flash_speed) % 2 == 0: # Disabled because I don't want it to flash.
