@@ -31,9 +31,6 @@ env/
 venv/
 .python-version
 
-# uv lock file (optional: you can push it if you want reproducible installs)
-uv.lock
-
 # VS Code settings
 .vscode/
 
@@ -42,6 +39,9 @@ uv.lock
 
 # ruff
 .ruff_cache/
+
+# pytest
+.pytest_cache/ 
 
 # PyCharm
 .idea/

@@ -1,29 +1,148 @@
+from __future__ import annotations
+from dataclasses import dataclass, field, asdict
 from pathlib import Path
+from typing import List, Dict, Any, Optional
+import pickle
 
+@dataclass
+class SearchEntry:
+    name: str = "New Search"
+    on_off: bool = True
+    muted: bool = False
+    channel: str = "trade"
+    buy_or_sell: str = "Buy"
+    string_or_regex: str = "Strings"
+    strings: str = ""
+    regex: str = ""
+    sound: str = "trade_chat_sound.ogg"
+
+@dataclass
 class Configs:
-    def __init__(self):
-        self.configs = {}
-        self.fps_cap = 60
-        self.file_path = Path(r"C:\Users\Jared\Documents\YPP Chatlogs\Jice_Emerald_x")
-        self.name = self.file_path.stem.split("_")[0]
-        self.search_strings = {
-            # 1: {"channel": "trade", "buy_or_sell": "sell", "strings": ["ci map", "cursed island map", "cursed isles map"], "regex": r"(?=.*\bsell\w*\b)(?=.*\bci\b)"},
-            1: {"name": "Buying CI map", "channel": "trade", "buy_or_sell": "buy", "strings": ["ci map", "cursed island", "cursed isles", "ci of", "ci near"], "regex": "", "sound": "trade_chat_sound.ogg"},
-            2: {"name": "Buying Vampire Reliq", "channel": "trade", "buy_or_sell": "buy", "strings": ["reliq", "vamp charm", "v charm", "vampire charm", "vampiric charm", "vampirate charm"], "regex": "", "sound": "trade_chat_sound.ogg"},
-            3: {"name": "Buying WWW-Finder", "channel": "trade", "buy_or_sell": "buy", "strings": ["wayfinder", "way-finder" "wolf charm", "w charm", "ww charm", "werewolf charm", "werewolves charm"], "regex": "", "sound": "trade_chat_sound.ogg"},
-            }
-        self.chat_filter_on = True
-        self.timer_offset = 0
-        self.play_swabbie_warning_sound = True
-        self.mini_rumble = False
-        self.rumble_scaling = 12
-        self.rumble_bars_as_natural_width = False
-        self.show_drop_off_numbers = True
-        self.mode = "CI"
-        self.timer_decimals = 1
-    
-    def load_configs(self):
-        pass
+    search_strings: dict[str, SearchEntry] = field(default_factory=lambda: {
+        1: SearchEntry(
+            name="Buying CI Map",
+            on_off=True,
+            muted=False,
+            channel="trade",
+            buy_or_sell="Buy",
+            string_or_regex="Strings",
+            strings=["ci map | cursed island | cursed isles | ci of | ci near"],
+            regex="",
+            sound="trade_chat_sound.ogg"
+        ),
+        2: SearchEntry(
+            name="Buying Vampire Reliq",
+            on_off=True,
+            muted=False,
+            channel="trade",
+            buy_or_sell="Buy",
+            string_or_regex="Strings",
+            strings=["reliq | vamp charm | v charm | vampire charm | vampiric charm | vampirate charm"],
+            regex="",
+            sound="trade_chat_sound.ogg"
+        ),
+        3: SearchEntry(
+            name="Buying WWWFinder",
+            on_off=True,
+            muted=False,
+            channel="trade",
+            buy_or_sell="Buy",
+            string_or_regex="Strings",
+            strings=["wayfinder | way-finder | wolf charm | w charm | ww charm | werewolf charm | werewolves charm"],
+            regex="",
+            sound="trade_chat_sound.ogg"
+        ),
+    })
 
-    def save_configs(self):
-        pass
+    chat_filter_off: bool = False
+    chat_mute: bool = False
+
+    timer_offset: int = 0
+    play_swabbie_warning_sound: bool = True
+    rumble_mini: bool = False
+    rumble_scaling: int = 12
+    rumble_bars_natural_width: bool = False
+    rumble_show_drop_off: bool = True
+    mode: str = "CI"
+    timer_decimals: int = 1
+
+    # GUI State
+    window_width: int = 300
+    window_height: int = 600
+    window_x: int = 100
+    window_y: int = 100
+    selected_mode: str = "Cursed Isles"
+    logs_path: str = ""
+    chatlogs_path: str = ""
+    specific_pirate = ""
+
+    # path where user-visible settings will be stored (default next to repo src/media)
+    settings_file: Path = Path.cwd() / "src" / "media" / "settings.pkl"
+
+    def __post_init__(self) -> None:
+        # ensure chatlogs_path and settings_file are Path objects
+        if isinstance(self.chatlogs_path, str):
+            self.chatlogs_path = Path(self.chatlogs_path)
+        if isinstance(self.settings_file, str):
+            self.settings_file = Path(self.settings_file)
+
+
+    @property
+    def name(self) -> str:
+        return self.chatlogs_path.stem.split("_")[0] if self.chatlogs_path.stem else ""
+
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = asdict(self)
+        # serialize Path objects to str
+        d["chatlogs_path"] = str(self.chatlogs_path)
+        d["settings_file"] = str(self.settings_file)
+        return d
+
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Configs":
+        data = data.copy()
+        if "chatlogs_path" in data:
+            data["chatlogs_path"] = Path(data["chatlogs_path"])
+        if "settings_file" in data:
+            data["settings_file"] = Path(data["settings_file"])
+        return cls(**data)
+
+
+    def load_configs(self, settings_file: Optional[Path] = None) -> None:
+        # ... your existing load logic that pickle.loads into `loaded`
+        try:
+            with settings_file.open("rb") as fh:
+                loaded: Configs = pickle.load(fh)
+            for k, v in vars(loaded).items():
+                setattr(self, k, v)
+        except Exception:
+            return
+
+
+    def save_configs(self, path: Optional[Path] = None) -> None:
+        path = Path(path) if path else self.settings_file
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        with path.open("wb") as fh:
+            pickle.dump(self, fh, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+    def load_configs(self, path: Optional[Path] = None) -> None:
+        path = Path(path) if path else self.settings_file
+        if not path.exists():
+            return
+
+        try:
+            with path.open("rb") as fh:
+                loaded: "Configs" = pickle.load(fh)
+
+            # copy loaded attributes into self
+            for k, v in vars(loaded).items():
+                setattr(self, k, v)
+
+        except Exception:
+            # ignore corrupted settings
+            return
+        
