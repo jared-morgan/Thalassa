@@ -74,7 +74,6 @@ class Configs:
     forage_warning_colour: bool = True
     mode: str = "Cursed Isles"
     timer_decimals: bool = False
-    timer_ascending = True
 
     # GUI State
     window_width: int = 300
