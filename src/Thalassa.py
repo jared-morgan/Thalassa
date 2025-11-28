@@ -355,9 +355,13 @@ class ThalassaGUI:
 
         self.notebook = ttk.Notebook(self.window)
         self.notebook.pack(fill="both", expand=True)
+
+        self.mode_content = None
         
         self.tabs = {}
         self._create_tabs()
+
+        self._scan_files()
 
     def _on_closing(self):
         # Save GUI state
@@ -374,23 +378,33 @@ class ThalassaGUI:
         self.window.destroy()
     
     def _create_tabs(self):
-        for name in ("Main", "Chats", "Options"):
+        for name in ("Mode", "Chats", "Options"):
             frame = ttk.Frame(self.notebook, style="My.TFrame")
             self.notebook.add(frame, text=name)
             self.tabs[name] = frame
         
         self._setup_options_tab()
         self._setup_chats_tab()
+        self._setup_mode_tab()
+        
     
     def _setup_options_tab(self):
         options_frame = self.tabs["Options"]
+
+        if self.configs.log_dir == None:
+            self.configs.log_dir = find_default_log_dir()
+        self.log_parser.update_log_path(self.configs.log_dir)
+
+        if self.configs.chatlog_dir == None:
+            self.configs.chatlog_dir = find_default_chatlog_dir()
+        # self.log_parser.update_chatlog_path(self.configs.chatlog_dir) # TODO: Write this func
         
 
         # Path pickers
         self.log_picker = PathPickerWidget(
             options_frame,
             "Logs path",
-            find_default_log_dir(),
+            self.configs.log_dir,
             callback=self.log_parser.update_log_path
         )
         self.log_picker.pack(padx=10, fill="x")
@@ -398,8 +412,8 @@ class ThalassaGUI:
         self.chatlog_picker = PathPickerWidget(
             options_frame,
             "Chatlogs path",
-            find_default_chatlog_dir(),
-            #TODO: Change to chatlog update function
+            self.configs.chatlog_dir,
+            # callback=self.log_parser.update_log_path #TODO: Write this func
         )
         self.chatlog_picker.pack(padx=10, fill="x")
 
@@ -423,10 +437,9 @@ class ThalassaGUI:
         # Mode dropdown
         mode_frame = ttk.Frame(options_frame)
         mode_frame.pack(pady=10, padx=10, fill="x")
-        
         ttk.Label(mode_frame, text="Mode").pack(side="left")
-        
         self.mode_var = tk.StringVar(value=self.configs.selected_mode)
+
         #TODO: Complete missing options
         mode_options = [
             "Cursed Isles",
@@ -441,6 +454,8 @@ class ThalassaGUI:
         
         mode_dropdown = ttk.Combobox(mode_frame, textvariable=self.mode_var, values=mode_options, state="readonly")
         mode_dropdown.pack(side="right", fill="x", expand=True, padx=(10, 0))
+        # Bind onchange event so we can refresh GUI of mode tab
+        mode_dropdown.bind("<<ComboboxSelected>>", self._setup_mode_tab)
 
         
         # Horizontal line (separator)
@@ -481,13 +496,81 @@ class ThalassaGUI:
         )
         show_drop_off_numbers_check.pack(side="top", anchor="w")
 
+        # --- Rumble Warning Sound Checkbox ---
+        self.play_rumble_warning_sound_var = tk.BooleanVar(value=self.configs.rumble_play_warning_sound)
+        warning_sound_check = ttk.Checkbutton(
+            rumble_settings_frame,
+            text="Play Warning Sound",
+            variable=self.play_rumble_warning_sound_var
+        )
+        warning_sound_check.pack(side="top", anchor="w", pady=(10, 0))
+
+        # --- Rumble Warning Sound Lead (s) ---
+        sound_lead_frame = ttk.Frame(rumble_settings_frame)
+        sound_lead_frame.pack(side="top", anchor="w", pady=(2, 0))
+        
+        ttk.Label(sound_lead_frame, text="Warning Time (s):").pack(side="left")
+        
+        self.rumble_warning_lead_var = tk.IntVar(value=self.configs.rumble_warning_lead)
+        sound_lead_entry = ttk.Entry(
+            sound_lead_frame, 
+            textvariable=self.rumble_warning_lead_var, 
+            width=10
+        )
+        sound_lead_entry.pack(side="left", padx=(5, 0))
+
+        # --- Rumble Red Text Checkbox ---
+        self.rumble_warning_text_var = tk.BooleanVar(value=self.configs.rumble_warning_colour)
+        red_text_check = ttk.Checkbutton(
+            rumble_settings_frame,
+            text="Turn Text Red on Warning",
+            variable=self.rumble_warning_text_var
+        )
+        red_text_check.pack(side="top", anchor="w", pady=(10, 0))
+
+        # --- Warning Sound File Selection ---
+        ttk.Label(rumble_settings_frame, text="Warning Sound File:").pack(side="top", anchor="w", pady=(10, 0))
+        
+        file_select_frame = ttk.Frame(rumble_settings_frame)
+        file_select_frame.pack(side="top", fill="x", anchor="w")
+
+        self.rumble_sound_file_var = tk.StringVar(value=self.configs.rumble_warning_sound)
+        
+        sound_file_entry = ttk.Entry(
+            file_select_frame, 
+            textvariable=self.rumble_sound_file_var
+        )
+        sound_file_entry.pack(side="left", fill="x", expand=True)
+
+        browse_btn = ttk.Button(file_select_frame, text="Browse", command=self.browse_sound_file)
+        browse_btn.pack(side="left", padx=(5, 0))
+
         
         # Horizontal line (separator)
         separator = ttk.Separator(options_frame, orient="horizontal")
         separator.pack(fill="x", pady=5)
 
+    def browse_sound_file(self):
+            # Determine initial directory (OS safe)
+            # Assuming script is running from root, constructs ./src/media
+            start_dir = os.path.join(os.getcwd(), "src", "media", "sounds")
+            if not os.path.exists(start_dir):
+                start_dir = os.getcwd() # Fallback if path doesn't exist
+
+            filename = filedialog.askopenfilename(
+                initialdir=start_dir,
+                title="Select Warning Sound",
+                filetypes=[("Audio Files", "*.ogg *.wav *.mp3"), ("All Files", "*.*")]
+            )
+            
+            if filename:
+                # Store only the filename if you want relative path, or full path if preferred
+                # Here we take the basename to match the comment example "warning.ogg"
+                self.rumble_sound_file_var.set(os.path.basename(filename))
+                # If you need the full path, use: self.rumble_sound_file_var.set(filename)
+
     def _setup_chats_tab(self):
-        chats_frame = self.tabs["Chats"]  # This is a normal Frame
+        chats_frame = self.tabs["Chats"]
 
         # Global Mute button
         self.chats_mute_var = tk.BooleanVar(value=bool(self.configs.chat_mute))
@@ -529,30 +612,33 @@ class ThalassaGUI:
         # Pass the inner frame to your FiltersTab
         FiltersTab(scrollable.scroll_frame, self.configs.search_strings)
 
-    def handle_log_event(self, event_type, data):
+    def _setup_mode_tab(self, event=None):
+        mode_frame = self.tabs["Mode"]
+        if self.mode_content is None:
+            self.mode_content = ttk.Frame(mode_frame)
+            self.mode_content.pack(fill="both", expand=True)
+
+        # Clear the mode_frame ready for new child frame
+        for widget in self.mode_content.winfo_children():
+            widget.destroy()
+
+        self.configs.selected_mode = self.mode_var.get()
+
+        if self.configs.selected_mode == "Cursed Isles":
+            self.current_mode_frame = CursedIsles(self.mode_content, self.configs)
+            self.current_mode_frame.pack(fill="both", expand=True)
+
+
+    def _scan_files(self):
+        self.log_parser.update_logs()
+        self.window.after(50, self._scan_files)
+
+
+    def handle_log_event(self, data):
         """GUI responds to LogParser events."""
-        pass
-        # print("Event:", event_type, data)
-
-        # # Events to handle
-        # # rumble_started, rumble_stopped, swordfight_started, swordfight_stopped, ci_started, ci_ended, forage_timer_start
-
-        # if event_type == "ci_started":
-        #     self.cursed_isles = CursedIsles
-        #     print("Cursed Isles started!")
-
-        # if event_type == "rumble_started":
-        #     if self.configs.mode == "CI" and self.cursed_isles:
-        #         if self.cursed_isles.get_team_members() == []:
-        #             self.cursed_isles.update_team_members(data)
-        #         self.
-                    
-
-
-        #         print("Rumble started!")
-
-        # else:
-        #     print(f"Unhandled event: {event_type}")
+        if not self.current_mode_frame:
+            print("No mode frame exists")
+        self.current_mode_frame.process_new_log_line(data)
 
     def run(self):
         self.window.mainloop()

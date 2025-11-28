@@ -54,17 +54,27 @@ class Configs:
         ),
     })
 
+    log_dir = None
+    chatlog_dir = None
+
     chat_filter_off: bool = False
     chat_mute: bool = False
 
     timer_offset: int = 0
     play_swabbie_warning_sound: bool = True
+    swabbie_warning_sound = "plank_swabbie.mp3"
     rumble_mini: bool = False
-    rumble_scaling: int = 12
     rumble_bars_natural_width: bool = False
     rumble_show_drop_off: bool = True
-    mode: str = "CI"
-    timer_decimals: int = 1
+    rumble_play_warning_sound: bool = True
+    rumble_warning_lead: float = 10.0
+    rumble_warning_colour: bool = True
+    rumble_warning_sound = "warning.ogg"
+    forage_warning_lead: float = 15.0
+    forage_warning_colour: bool = True
+    mode: str = "Cursed Isles"
+    timer_decimals: bool = False
+    timer_ascending = True
 
     # GUI State
     window_width: int = 300

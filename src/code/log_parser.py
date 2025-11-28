@@ -1,8 +1,8 @@
 from pathlib import Path
 
 class LogData():
-    name: str = "",
-    size: int = 0,
+    pirate: str = ""
+    size: int = 0
 
 class LogParser():
     def __init__(self, event_callback=None) -> None:
@@ -10,10 +10,10 @@ class LogParser():
         self.log_files: dict[str, LogData] = {}
         self.event_callback = event_callback
 
-    def _emit(self, event_type: str, data: str=None):
+    def _emit(self, data: str=None):
         """Notify the GUI of an event."""
         if self.event_callback:
-            self.event_callback(event_type, data)
+            self.event_callback(data)
     
     def update_log_path(self, new_path: Path) -> None:
         """Update the log path and reset the log_files dictionary."""
@@ -33,53 +33,39 @@ class LogParser():
 
     def _update_log_file_size(self, filename: str, filesize: int) -> None:
         """Update the size of a specific log file in the log_files dictionary."""
-        self.log_files[filename] = filesize
+        self.log_files[filename].size = filesize
 
     def _check_log_size(self, log_file_path: Path) -> int:
         """Checks if the log filesize has changed, returns the number of new bytes."""
         # Check if the file exists
+        filename = log_file_path.name
         if not log_file_path.exists() or not log_file_path.is_file():
             # Delete from log_files if it no longer exists
-            if log_file_path.name in self.log_files:
-                del self.log_files[log_file_path.name]
+            if filename in self.log_files:
+                del self.log_files[filename]
             return 0
         
         current_size = log_file_path.stat().st_size
-        last_size = self.log_files.get(log_file_path.name, 0)
+        last_size = self.log_files[filename].size
         if current_size > last_size:
             new_bytes = current_size - last_size
             return new_bytes
+        return 0
         
     def _process_logs(self, log_file_path: Path, new_bytes: int) -> None:
         """Process new log entries from the specified log file."""
-        last_size = self.log_files.get(log_file_path.name, 0)
+        filename = log_file_path.name
+        last_size = self.log_files[filename].size
         current_size = last_size + new_bytes
 
         with log_file_path.open("r", encoding="utf-8") as fh:
             fh.seek(last_size)
             new_data = fh.read()
-
-            print(f"New data from {log_file_path.name}:")
-
-            EVENT_PATTERNS = [
-                ("Entering game data.BoxingObject", "rumble_started"),
-                ("replaced=class com.threerings.piracy.puzzle.boxing.client.BoxingPanel", "rumble_stopped"),
-                ("Entering game data.SwordObject", "sf_start"),
-                ("replaced=class com.threerings.piracy.puzzle.sword.client.SwordPanel", "sf_stopped"),
-                ("Setting place view com.threerings.yohoho.sea.seamonster.cursed.client.GauntletScenePanel", "ci_started"),
-                ("Disabling skirmish environment mod [mod=dark_seas]", "ci_ended"),
-                ("Stopping foraging in 119 seconds", "forage_timer_start"),
-            ]
-
             for line in new_data.splitlines():
-                for pattern, event in EVENT_PATTERNS:
-                    if pattern in line:
-                        self._emit(event, data=line)
-                        break   # stop checking patterns for this line
-
+                self._emit(data=line)
 
         # Update the last read size
-        self._update_log_file_size(log_file_path.name, current_size)
+        self._update_log_file_size(filename, current_size)
     
         
     def update_logs(self) -> None:
