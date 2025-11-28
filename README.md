@@ -1,4 +1,4 @@
 How to run:
-git pull
-uv sync
-Run src/code/Thalassa.py
+1. `git pull`
+2. `uv sync`
+3. `Run src/code/Thalassa.py`
