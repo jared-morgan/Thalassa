@@ -1,24 +1,48 @@
 from pathlib import Path
+import re
 
 class LogData():
     pirate: str = ""
     size: int = 0
 
 class LogParser():
-    def __init__(self, event_callback=None) -> None:
-        # Dictionary  of filename and last size read
+    def __init__(self, event_callback, configs) -> None:
+        # Dictionary  of filename and last size read]
+        self.configs = configs
         self.log_files: dict[str, LogData] = {}
+        self.chatlog_files: dict[str, LogData] = {}
         self.event_callback = event_callback
 
-    def _emit(self, data: str=None):
+
+        self.SELL_STRINGS = ["sell", "[s]", "wts", "free", "giving"]
+        self.BUY_STRINGS = ["buy", "[b]", "wtb", "lf", "looking"]
+
+        self.LOG_EVENT_PATTERNS = [
+            ("Entering game data.BoxingObject", "Cursed Isles"),
+            ("replaced=class com.threerings.piracy.puzzle.boxing.client.BoxingPanel", "Cursed Isles"),
+            ("Entering game data.SwordObject", "Cursed Isles"),
+            ("replaced=class com.threerings.piracy.puzzle.sword.client.SwordPanel", "Cursed Isles"),
+            ("Setting place view com.threerings.yohoho.sea.seamonster.cursed.client.GauntletScenePanel", "Cursed Isles"),
+            ("Disabling skirmish environment mod [mod=dark_seas]", "Cursed Isles"),
+            ("Stopping foraging in 119 seconds", "Cursed Isles"),
+        ]
+
+        self.CHATLOG_EVENT_PATTERNS = []
+
+
+    def _emit(self, mode, data: str = None, *args, **kwargs):
         """Notify the GUI of an event."""
         if self.event_callback:
-            self.event_callback(data)
+            self.event_callback(mode, data, *args, **kwargs)
     
+
     def update_log_path(self, new_path: Path) -> None:
-        """Update the log path and reset the log_files dictionary."""
         self.log_path: Path = new_path
-        self.log_files = {}
+    
+
+    def update_chatlog_path(self, new_path: Path) -> None:
+        self.chatlog_path: Path = new_path
+
 
     def _check_for_new_log_files(self) -> None:
         """Scan the log directory and update the log_files dictionary."""
@@ -30,23 +54,40 @@ class LogParser():
             if log_file.is_file() and log_file.suffix == ".log":
                 if log_file.name not in self.log_files:
                     self.log_files[log_file.name] = LogData()
+                    new_file_size = log_file.stat().st_size
+                    self._update_file_size(self.log_files, log_file.name, new_file_size)
 
-    def _update_log_file_size(self, filename: str, filesize: int) -> None:
-        """Update the size of a specific log file in the log_files dictionary."""
-        self.log_files[filename].size = filesize
+    
+    def _check_for_new_chatlog_files(self) -> None:
+        """Scan the chatlog directory and update the chatlog_files dictionary."""
+        if not self.chatlog_path.exists() or not self.chatlog_path.is_dir():
+            return
+        for chatlog_file in self.chatlog_path.glob("*"):
+            # Checks if it is a file (not a directory) AND has no extension
+            if chatlog_file.is_file() and not chatlog_file.suffix:
+                if chatlog_file.name not in self.chatlog_files:
+                    print(chatlog_file.name)
+                    self.chatlog_files[chatlog_file.name] = LogData()
+                    new_file_size = chatlog_file.stat().st_size
+                    self._update_file_size(self.chatlog_files, chatlog_file.name, new_file_size)
 
-    def _check_log_size(self, log_file_path: Path) -> int:
-        """Checks if the log filesize has changed, returns the number of new bytes."""
+
+    def _update_file_size(self, directory, filename: str, filesize: int) -> None:
+        """Update the size of a specific file in the dictionary."""
+        directory[filename].size = filesize
+
+    def _check_file_size(self, directory, file_path: Path) -> int:
+        """Checks if the filesize has changed, returns the number of new bytes."""
         # Check if the file exists
-        filename = log_file_path.name
-        if not log_file_path.exists() or not log_file_path.is_file():
+        filename = file_path.name
+        if not file_path.exists() or not file_path.is_file():
             # Delete from log_files if it no longer exists
-            if filename in self.log_files:
-                del self.log_files[filename]
+            if filename in directory:
+                del directory[filename]
             return 0
         
-        current_size = log_file_path.stat().st_size
-        last_size = self.log_files[filename].size
+        current_size = file_path.stat().st_size
+        last_size = directory[filename].size
         if current_size > last_size:
             new_bytes = current_size - last_size
             return new_bytes
@@ -55,6 +96,7 @@ class LogParser():
     def _process_logs(self, log_file_path: Path, new_bytes: int) -> None:
         """Process new log entries from the specified log file."""
         filename = log_file_path.name
+        directory = self.log_files
         last_size = self.log_files[filename].size
         current_size = last_size + new_bytes
 
@@ -62,10 +104,123 @@ class LogParser():
             fh.seek(last_size)
             new_data = fh.read()
             for line in new_data.splitlines():
-                self._emit(data=line)
+                for pattern, mode in self.LOG_EVENT_PATTERNS:
+                    if pattern in line:
+                        self._emit(mode=mode, data=line)
 
         # Update the last read size
-        self._update_log_file_size(filename, current_size)
+        self._update_file_size(directory, filename, current_size)
+
+    
+    def _process_chatlogs(self, chatlog_file_path: Path, new_bytes: int) -> None:
+        """Process new chatlog entries from the specified chatlog file."""
+        filename = chatlog_file_path.name
+        directory = self.chatlog_files
+        last_size = self.chatlog_files[filename].size
+        current_size = last_size + new_bytes
+
+        with chatlog_file_path.open("r", encoding="utf-8", errors="replace") as fh:
+            fh.seek(last_size)
+            new_data = fh.read()
+            for line in new_data.splitlines():
+                for pattern, mode in self.LOG_EVENT_PATTERNS:
+                    if pattern in line:
+                        self._emit(mode=mode, data=line)
+                self.apply_custom_chatlog_filters(line)
+
+        # Update the last read size
+        self._update_file_size(directory, filename, current_size)
+
+
+    def apply_custom_chatlog_filters(self, line): #TODO add ability to click to copy pirates name to clipboard
+        line_lower = line.lower()
+        buy_and_sell_split = False
+        buy_parts = []
+        sell_parts = []
+
+        # Iterate over the SearchEntry objects
+        for key, entry in self.configs.search_strings.items():
+            
+            # 1. Check if the filter is enabled
+            if not entry.on_off:
+                continue
+
+            # 2. Channel Check (Preserving original logic for log format parsing)
+            # Assuming entry.channel is a string like "trade", "global", etc.
+            try:
+                # Matches old logic: checks if specific channel is set and matches log line index 2
+                if entry.channel and entry.channel != line_lower.split(" ")[2]:
+                    continue
+            except IndexError:
+                continue # line is part of a multiline message or format is otherwise wrong
+
+            # 3. Regex Logic
+            if entry.string_or_regex == "Regex":
+                if entry.regex and re.search(entry.regex, line_lower):
+                    self._emit("Filter Match", line, key=key, match="Regex")
+                continue
+
+            # 4. String Logic
+            elif entry.string_or_regex == "Strings":
+                search_terms = []
+                for s in entry.strings:
+                    # Split by pipe and strip whitespace
+                    search_terms.extend([term.strip() for term in s.split('|') if term.strip()])
+
+                if entry.channel == "trade":
+                    if not buy_and_sell_split:
+                        buy_parts, sell_parts = self.split_buy_and_sell(line_lower)
+                        buy_and_sell_split = True
+                    
+                    # Logic: If I want to BUY, I search the 'sell_parts' of the message
+                    if entry.buy_or_sell.lower() == "buy":
+                        for term in search_terms:
+                            for part in sell_parts:
+                                if term in part:
+                                    self._emit("Filter Match", line, key=key, match=term)
+                    
+                    # Logic: If I want to SELL, I search the 'buy_parts' of the message
+                    elif entry.buy_or_sell.lower() == "sell":
+                        for term in search_terms:
+                            for part in buy_parts:
+                                if term in part:
+                                    self._emit("Filter Match", line, key=key, match=term)
+                else:
+                    # Standard channel search (Global, Crew, etc.)
+                    for term in search_terms:
+                        if term in line_lower:
+                            self._emit("Filter Match", line, key=key, match=term)
+
+    
+    def split_buy_and_sell(self, message: str) -> tuple[list[str], list[str]]:
+        buy_set = {k.lower() for k in self.BUY_STRINGS}
+        sell_set = {k.lower() for k in self.SELL_STRINGS}
+
+        all_keywords = sorted(buy_set | sell_set, key=len, reverse=True)
+        if not all_keywords:
+            return [], []
+
+        # Match any keyword literally, case-insensitive
+        pattern = "(" + "|".join(re.escape(k) for k in all_keywords) + ")"
+        matches = list(re.finditer(pattern, message, flags=re.IGNORECASE))
+
+        if not matches:
+            return [], []
+
+        buy_parts = []
+        sell_parts = []
+
+        for i, m in enumerate(matches):
+            start = m.start()
+            end = matches[i + 1].start() if i + 1 < len(matches) else len(message)
+            segment = message[start:end].strip()
+            keyword = m.group(1).lower()
+            if keyword in buy_set:
+                buy_parts.append(segment)
+            else:
+                sell_parts.append(segment)
+
+        return buy_parts, sell_parts
     
         
     def update_logs(self) -> None:
@@ -73,7 +228,22 @@ class LogParser():
         self._check_for_new_log_files()
         for filename in self.log_files.keys():
             log_file_path = self.log_path / filename
-            new_bytes = self._check_log_size(log_file_path)
+            new_bytes = self._check_file_size(self.log_files, log_file_path)
             if new_bytes > 0:
                 # There are new bytes to read. Start reading from last_size
                 self._process_logs(log_file_path, new_bytes)
+
+    def update_chatlogs(self) -> None:
+        """Main chatlog update function to check for and process new data in chatlog files."""
+        self._check_for_new_chatlog_files()
+        for filename in self.chatlog_files.keys():
+            chatlog_file_path = self.chatlog_path / filename
+            new_bytes = self._check_file_size(self.chatlog_files, chatlog_file_path)
+            if new_bytes > 0:
+                # There are new bytes to read. Start reading from last_size
+                self._process_chatlogs(chatlog_file_path, new_bytes)
+
+    
+    def update_all_logs(self):
+        self.update_chatlogs()
+        self.update_logs()

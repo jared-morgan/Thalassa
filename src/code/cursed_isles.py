@@ -43,7 +43,6 @@ class CursedIsles(ttk.Frame):
             ("Stopping foraging in 119 seconds", self._start_forage),
         ]
 
-        self._start_forage()  
 
 
     def _strip_names(self, data: str) -> list:

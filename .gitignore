@@ -56,4 +56,7 @@ htmlcov/
 
 # Notes and scratch files
 notes/
-tests/
+tests/ 
+src/media/settings.pkl
+
+  

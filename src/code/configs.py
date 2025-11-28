@@ -72,7 +72,6 @@ class Configs:
     rumble_warning_sound = "warning.ogg"
     forage_warning_lead: float = 15.0
     forage_warning_colour: bool = True
-    mode: str = "Cursed Isles"
     timer_decimals: bool = False
 
     # GUI State
@@ -85,7 +84,6 @@ class Configs:
     chatlogs_path: str = ""
     specific_pirate = ""
 
-    # path where user-visible settings will be stored (default next to repo src/media)
     settings_file: Path = Path.cwd() / "src" / "media" / "settings.pkl"
 
     def __post_init__(self) -> None:
@@ -119,27 +117,22 @@ class Configs:
         return cls(**data)
 
 
-    def load_configs(self, settings_file: Optional[Path] = None) -> None:
-        # ... your existing load logic that pickle.loads into `loaded`
-        try:
-            with settings_file.open("rb") as fh:
-                loaded: Configs = pickle.load(fh)
-            for k, v in vars(loaded).items():
-                setattr(self, k, v)
-        except Exception:
-            return
-
-
     def save_configs(self, path: Optional[Path] = None) -> None:
         path = Path(path) if path else self.settings_file
         path.parent.mkdir(parents=True, exist_ok=True)
+        
+        print(F"Saving to path {path}")
 
         with path.open("wb") as fh:
             pickle.dump(self, fh, protocol=pickle.HIGHEST_PROTOCOL)
 
 
+        
     def load_configs(self, path: Optional[Path] = None) -> None:
         path = Path(path) if path else self.settings_file
+        
+        print(F"Loading Configs from path {path}")
+        
         if not path.exists():
             return
 
@@ -149,9 +142,15 @@ class Configs:
 
             # copy loaded attributes into self
             for k, v in vars(loaded).items():
-                setattr(self, k, v)
+                # Safety check: Only update attributes that actually exist in the current code
+                if hasattr(self, k): 
+                    setattr(self, k, v)
+                else:
+                    print(f"Warning: Skipping unknown config key '{k}' from save file.")
 
-        except Exception:
-            # ignore corrupted settings
+        except Exception as e:
+            print(f"Failed to load configs: {e}")
             return
+
+  
         
