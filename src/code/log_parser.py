@@ -46,7 +46,7 @@ class LogParser():
 
     def _check_for_new_log_files(self) -> None:
         """Scan the log directory and update the log_files dictionary."""
-        if not self.log_path.exists() or not self.log_path.is_dir():
+        if self.log_path == "" or not self.log_path.exists() or not self.log_path.is_dir():
             return
 
         # Find files that match the pattern "yohoho_1764097495517.log"
@@ -60,7 +60,7 @@ class LogParser():
     
     def _check_for_new_chatlog_files(self) -> None:
         """Scan the chatlog directory and update the chatlog_files dictionary."""
-        if not self.chatlog_path.exists() or not self.chatlog_path.is_dir():
+        if self.chatlog_path == "" or not self.chatlog_path.exists() or not self.chatlog_path.is_dir():
             return
         for chatlog_file in self.chatlog_path.glob("*"):
             # Checks if it is a file (not a directory) AND has no extension
