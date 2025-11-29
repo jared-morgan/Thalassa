@@ -101,28 +101,28 @@ class OptionsTab(ttk.Frame):
         if self.configs.log_dir == None:
             self.configs.log_dir = find_default_log_dir()
         if self.configs.log_dir != "":
-            self._emit("update_log_path", self.configs.log_dir)
+            self._emit("update_log_path", Path(self.configs.log_dir))
 
         if self.configs.chatlog_dir == None:
             self.configs.chatlog_dir = find_default_chatlog_dir()
         if self.configs.chatlog_dir != "":
-            self._emit("update_chatlog_path", self.configs.chatlog_dir)
+            self._emit("update_chatlog_path", Path(self.configs.chatlog_dir))
         
 
         # Path pickers
         self.log_picker = PathPickerWidget(
             self.options_frame,
             "Logs path",
-            self.configs.log_dir,
-            callback=self._emit("update_log_path", self.configs.log_dir)
+            Path(self.configs.log_dir),
+            callback=lambda new_path: self._emit("update_log_path", Path(new_path))
         )
         self.log_picker.pack(padx=10, fill="x")
         
         self.chatlog_picker = PathPickerWidget(
             self.options_frame,
             "Chatlogs path",
-            self.configs.chatlog_dir,
-            callback=self._emit("update_chatlog_path", self.configs.chatlog_dir)
+            Path(self.configs.chatlog_dir),
+            callback=lambda new_path: self._emit("update_chatlog_path", Path(new_path))
         )
         self.chatlog_picker.pack(padx=10, fill="x")
 

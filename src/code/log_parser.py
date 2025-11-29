@@ -13,6 +13,8 @@ class LogParser():
         self.chatlog_files: dict[str, LogData] = {}
         self.event_callback = event_callback
 
+        self.chatlog_path = ""
+        self.log_path = ""
 
         self.SELL_STRINGS = ["sell", "[s]", "wts", "free", "giving"]
         self.BUY_STRINGS = ["buy", "[b]", "wtb", "lf", "looking"]
@@ -46,8 +48,11 @@ class LogParser():
 
     def _check_for_new_log_files(self) -> None:
         """Scan the log directory and update the log_files dictionary."""
-        if self.log_path == "" or not self.log_path.exists() or not self.log_path.is_dir():
-            return
+        try:
+            if self.log_path == "" or not self.log_path.exists() or not self.log_path.is_dir():
+                return
+        except Exception as error:
+            print(F"Failed to load logs: {error = }")
 
         # Find files that match the pattern "yohoho_1764097495517.log"
         for log_file in self.log_path.glob("yohoho_*.log"):
@@ -60,8 +65,11 @@ class LogParser():
     
     def _check_for_new_chatlog_files(self) -> None:
         """Scan the chatlog directory and update the chatlog_files dictionary."""
-        if self.chatlog_path == "" or not self.chatlog_path.exists() or not self.chatlog_path.is_dir():
-            return
+        try:
+            if self.chatlog_path == "" or not self.chatlog_path.exists() or not self.chatlog_path.is_dir():
+                return
+        except Exception as error:
+            print(F"Failed to load chatlogs: {error = }")
         for chatlog_file in self.chatlog_path.glob("*"):
             # Checks if it is a file (not a directory) AND has no extension
             if chatlog_file.is_file() and not chatlog_file.suffix:
