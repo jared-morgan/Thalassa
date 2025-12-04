@@ -3,11 +3,14 @@ import ttkbootstrap as ttk
 from tkinter import filedialog
 import os
 
-from code.configs import Configs, SearchEntry
-from code.log_parser import LogParser
-from code.cursed_isles import CursedIsles
-from code.chats_tab import ChatsTab
-from code.options_tab import OptionsTab
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
+import pygame.mixer
+
+from thalassa_core.configs import Configs, SearchEntry
+from thalassa_core.log_parser import LogParser
+from thalassa_core.cursed_isles import CursedIsles
+from thalassa_core.chats_tab import ChatsTab
+from thalassa_core.options_tab import OptionsTab
 
 
 class ThalassaGUI:
@@ -79,17 +82,19 @@ class ThalassaGUI:
         """GUI responds to LogParser events."""
         if not self.current_mode_frame:
             print("No mode frame exists")
-        if mode == "Cursed_Isles": #TODO Fix this
+        if mode == "Cursed Isles": #TODO Fix this
             self.current_mode_frame.process_new_log_line(data)
         if mode == "Filter Match":
-            self.chats_tab.play_sound(data, *args, **kwargs)
+            self.chats_tab.update_output(data, *args, **kwargs)
 
 
     def handle_options_event(self, func, *args, **kwargs):
         if func == "update_log_path":
             self.log_parser.update_log_path(*args, **kwargs)
+            self.configs.log_dir = args[0]
         elif func == "update_chatlog_path":
             self.log_parser.update_chatlog_path(*args, **kwargs)
+            self.configs.chatlog_dir = args[0]
         elif func == "setup_mode_tab":
             self._setup_mode_tab()
 

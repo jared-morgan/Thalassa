@@ -29,7 +29,7 @@ def find_default_log_dir():
                     return p
 
     print("Puzzle Pirates folder not found")
-    return ""
+    return None
 
 
 def find_default_chatlog_dir():
@@ -41,7 +41,7 @@ def find_default_chatlog_dir():
         print("Found chatlogs:", chatlog_path)
         return chatlog_path
     print("Chatlogs folder not found")
-    return ""
+    return None
 
 
 class PathPickerWidget(ttk.Frame):
@@ -100,12 +100,12 @@ class OptionsTab(ttk.Frame):
 
         if self.configs.log_dir == None:
             self.configs.log_dir = find_default_log_dir()
-        if self.configs.log_dir != "":
+        if self.configs.log_dir != None:
             self._emit("update_log_path", Path(self.configs.log_dir))
 
         if self.configs.chatlog_dir == None:
             self.configs.chatlog_dir = find_default_chatlog_dir()
-        if self.configs.chatlog_dir != "":
+        if self.configs.chatlog_dir != None:
             self._emit("update_chatlog_path", Path(self.configs.chatlog_dir))
         
 

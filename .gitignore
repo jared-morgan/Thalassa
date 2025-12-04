@@ -59,4 +59,6 @@ notes/
 tests/ 
 src/media/settings.pkl
 
+src/thalassa_core/discord.py
+
   

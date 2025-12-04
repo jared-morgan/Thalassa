@@ -4,48 +4,8 @@ from tkinter import filedialog
 import pygame.mixer as mixer
 from pathlib import Path
 
-from code.configs import SearchEntry
-
-
-class ScrollableFrame(ttk.Frame):
-    def __init__(self, parent, *args, **kwargs):
-        super().__init__(parent, *args, **kwargs)
-
-        mixer.init()
-
-        self.canvas = tk.Canvas(self)
-        self.scroll_frame = ttk.Frame(self.canvas)
-        vsb = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
-        self.canvas.configure(yscrollcommand=vsb.set)
-
-        vsb.pack(side="right", fill="y")
-        self.canvas.pack(side="left", fill="both", expand=True)
-
-        # Window inside the canvas
-        self.window_id = self.canvas.create_window((0, 0), window=self.scroll_frame, anchor="nw")
-
-        # Update scroll region when frame changes
-        self.scroll_frame.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
-
-        # Bind canvas width to scroll_frame width
-        self.canvas.bind("<Configure>", self._on_canvas_configure)
-
-        # Optional: bind mouse wheel scrolling
-        self.scroll_frame.bind("<Enter>", lambda e: self._bind_mousewheel())
-        self.scroll_frame.bind("<Leave>", lambda e: self._unbind_mousewheel())
-
-    def _on_canvas_configure(self, event):
-        # Force scroll_frame to match canvas width
-        self.canvas.itemconfig(self.window_id, width=event.width)
-
-    def _bind_mousewheel(self):
-        self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
-
-    def _unbind_mousewheel(self):
-        self.canvas.unbind_all("<MouseWheel>")
-
-    def _on_mousewheel(self, event):
-        self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+from thalassa_core.configs import SearchEntry
+from thalassa_core.tkinter_widgets import ScrollableFrame
 
 
 class FiltersTab:
@@ -264,14 +224,24 @@ class FiltersTab:
         self.create_filter_widgets(self.frame, settings, new_number)
 
 
+# class OutputTab:
+#     def __init__(self, parent, search_strings):
+#         self.search_strings = search_strings
+#         self.frame = ttk.Frame(parent)
+#         self.frame.pack(fill="both", expand=True)
+
 class ChatsTab(ttk.Frame):
     def __init__(self, chats_frame: ttk.Frame, configs):
         super().__init__(chats_frame)
+
         self.configs = configs
         self.chats_frame = chats_frame
+
+        mixer.init()
+
+        self.output_text = []
         
         self.tabs = {}
-
         self._setup_chats_tab()
 
 
@@ -311,16 +281,41 @@ class ChatsTab(ttk.Frame):
         filters_frame = self.tabs["Filters"]
 
         # Create a scrollable frame
-        scrollable = ScrollableFrame(filters_frame)
-        scrollable.pack(fill="both", expand=True)
+        scrollable_filters = ScrollableFrame(filters_frame)
+        scrollable_filters.pack(fill="both", expand=True)
 
-        # Pass the inner frame to your FiltersTab
-        FiltersTab(scrollable.scroll_frame, self.configs.search_strings)
+        # Pass the inner frame to FiltersTab
+        FiltersTab(scrollable_filters.scroll_frame, self.configs.search_strings)
 
-    def play_sound(self, data, *args, **kwargs):
+        # Populate the Output tab
+        output_frame = self.tabs["Output"]
+
+        # Create a scrollable frame
+        scrollable_output = ScrollableFrame(output_frame)
+        scrollable_output.pack(fill="both", expand=True)
+
+    def update_output(self, line_of_text: str, *args, key: str | None=None, **kwargs):
+        if key is not None:
+            self._play_filter_sound(key)
+        
+
+    def _play_filter_sound(self, key: str):
+        """Checks if a sound attached to a filter ought to play"""
+        # Check for global mute
+        if self.configs.chat_mute:
+            return
+        # Check for filter mute
+        if self.configs.search_strings[key].muted:
+            return
+        # Check sound to play
+        self._play_sound(self.configs.search_strings[key].sound)
+
+
+    def _play_sound(self, sound):
+        #TODO Build out functionality here.
         try:
             base_dir = Path(__file__).resolve().parent.parent
-            sound_path = base_dir / "media" / "sounds" / self.configs.rumble_warning_sound
+            sound_path = base_dir / "media" / "sounds" / sound
 
             if not sound_path.exists():
                 print(f"Sound file not found: {sound_path}")

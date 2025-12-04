@@ -2,9 +2,9 @@ import tkinter as tk
 import ttkbootstrap as ttk
 from functools import partial
 
-from code.timer import Timer
-from code.hom import Homunculus
-from code.rumble import Rumble
+from thalassa_core.timer import Timer
+from thalassa_core.hom import Homunculus
+from thalassa_core.rumble import Rumble
 
 class PlayerData:
     def __init__(self, parent: tk.Widget, name: str):
@@ -178,8 +178,8 @@ class CursedIsles(ttk.Frame):
 
 
     def _start_forage(self, data: str = None):
-        self.rumble_active = False
-        self.sf_active = False
+        self._stop_forage()
+        self._stop_rumble()
         self.forage_active = True
         self.timer_frame.pack(fill="both", expand=True)
         self.timer.reset()
@@ -201,7 +201,6 @@ class CursedIsles(ttk.Frame):
 
 
     def process_new_log_line(self, data: str):
-        print(data)
         for pattern, event_func in self.LOG_EVENT_PATTERNS:
             if pattern in data:
                 event_func(data)
