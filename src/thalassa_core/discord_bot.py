@@ -115,30 +115,27 @@ class CIDiscordBot:
         """Sends a new trade message to the MAP_TRADING_CHANNEL."""
         channel = self.bot.get_channel(self.MAP_TRADING_CHANNEL_ID)
         if channel is None:
-            print("Trade channel not found!")
+            logging.warning("Trade channel not found!")
             return
 
         try:
             await channel.send(content=message)
-            print(f"Sent trade message to channel {channel.name}")
+            logging.info(f"Sent trade message to channel {channel.name}")
         except discord.Forbidden:
-            print("Missing permission to send messages in the trade channel.")
+            logging.warning("Missing permission to send messages in the trade channel.")
         except discord.HTTPException as e:
-            print(f"Failed to send trade message: {e}")
-
-
-
+            logging.warning(f"Failed to send trade message: {e}")
 
 
     def run_sweep(self):
         if not self.token:
-            print("No DISCORD_TOKEN found in environment variables.")
+            logging.warning("No DISCORD_TOKEN found in environment variables.")
             return
         self.bot.run(self.token, log_handler=None, log_level=logging.INFO)
 
     def set_discord_token(self, token: str) -> None:
         """Sets the Discord token as an environment variable for this process."""
-        print(F"Set a new discord token in the environment variables")
+        logging.info(F"Set a new discord token in the environment variables")
         os.environ["DISCORD_TOKEN"] = token
         self.load_discord_token()
 
@@ -147,7 +144,7 @@ class CIDiscordBot:
 
         self.token = os.getenv("DISCORD_TOKEN")
         if not self.token:
-            print("No DISCORD_TOKEN found in environment variables.")
+            logging.warning("No DISCORD_TOKEN found in environment variables.")
 
     def set_discord_token(self, token: str) -> None:
         """Store a Discord token at the system level."""
@@ -178,15 +175,15 @@ class CIDiscordBot:
                     if not any("DISCORD_TOKEN=" in line for line in lines):
                         f.write(f'\nexport DISCORD_TOKEN="{token}"\n')
 
-            print("Discord token stored at system level.")
+            logging.info("Discord token stored at system level.")
         except Exception as e:
-            print(f"Failed to persist token at system level: {e}")
+            logging.warning(f"Failed to persist token at system level: {e}")
 
     def load_discord_token(self):
         """Load the Discord token from environment variables."""
         self.token = os.getenv("DISCORD_TOKEN")
         if not self.token:
-            print("No DISCORD_TOKEN found in environment variables.")
+            logging.warning("No DISCORD_TOKEN found in environment variables.")
         return self.token
     
 

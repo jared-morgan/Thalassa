@@ -36,7 +36,7 @@ def find_default_chatlog_dir():
     """Checks for the default chatlog directory for puzzle pirates."""
     # TODO: What common paths do other people use?
     home = Path.home()
-    chatlog_path = home / "Documents" / "YPP Chatlogs"
+    chatlog_path = home / "Documents" / "YPP_Chatlogs"
     if chatlog_path.exists():
         print("Found chatlogs:", chatlog_path)
         return chatlog_path
