@@ -36,7 +36,7 @@ def find_default_chatlog_dir():
     """Checks for the default chatlog directory for puzzle pirates."""
     # TODO: What common paths do other people use?
     home = Path.home()
-    chatlog_path = home / "Documents" / "YPP_Chatlogs"
+    chatlog_path = home / "Documents" / "YPP Chatlogs"
     if chatlog_path.exists():
         print("Found chatlogs:", chatlog_path)
         return chatlog_path
@@ -113,7 +113,7 @@ class OptionsTab(ttk.Frame):
         self.log_picker = PathPickerWidget(
             self.options_frame,
             "Logs path",
-            Path(self.configs.log_dir),
+            self.configs.log_dir,
             callback=lambda new_path: self._emit("update_log_path", Path(new_path))
         )
         self.log_picker.pack(padx=10, fill="x")
@@ -121,7 +121,7 @@ class OptionsTab(ttk.Frame):
         self.chatlog_picker = PathPickerWidget(
             self.options_frame,
             "Chatlogs path",
-            Path(self.configs.chatlog_dir),
+            self.configs.chatlog_dir,
             callback=lambda new_path: self._emit("update_chatlog_path", Path(new_path))
         )
         self.chatlog_picker.pack(padx=10, fill="x")

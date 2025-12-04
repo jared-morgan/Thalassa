@@ -30,6 +30,7 @@ pip-wheel-metadata/
 env/
 venv/
 .python-version
+*.env
 
 # VS Code settings
 .vscode/
@@ -58,7 +59,5 @@ htmlcov/
 notes/
 tests/ 
 src/media/settings.pkl
-
-src/thalassa_core/discord.py
-
+src/media/discord.log
   

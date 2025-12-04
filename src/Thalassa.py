@@ -11,10 +11,14 @@ from thalassa_core.log_parser import LogParser
 from thalassa_core.cursed_isles import CursedIsles
 from thalassa_core.chats_tab import ChatsTab
 from thalassa_core.options_tab import OptionsTab
+from thalassa_core.discord_bot import CIDiscordBot
 
 
 class ThalassaGUI:
     def __init__(self, configs):
+
+        self.ci_discord_bot = CIDiscordBot()
+
         self.configs = configs
         self.log_parser = LogParser(self.handle_log_event, self.configs)
         self.window = ttk.Window(themename="darkly")
@@ -28,7 +32,7 @@ class ThalassaGUI:
         self.notebook.pack(fill="both", expand=True)
 
         self.mode_content = None
-        
+
         self.tabs = {}
         self._create_tabs()
 
@@ -52,7 +56,7 @@ class ThalassaGUI:
             self.tabs[name] = frame
         
         self.options_tab = OptionsTab(self.tabs["Options"], self.configs, self.handle_options_event)
-        self.chats_tab = ChatsTab(self.tabs["Chats"], self.configs)
+        self.chats_tab = ChatsTab(self.tabs["Chats"], self.configs, self.ci_discord_bot)
         self._setup_mode_tab()
     
 

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from thalassa_core.configs import SearchEntry
 from thalassa_core.tkinter_widgets import ScrollableFrame
+from thalassa_core.discord_bot import CIDiscordBot
 
 
 class FiltersTab:
@@ -231,10 +232,11 @@ class FiltersTab:
 #         self.frame.pack(fill="both", expand=True)
 
 class ChatsTab(ttk.Frame):
-    def __init__(self, chats_frame: ttk.Frame, configs):
+    def __init__(self, chats_frame: ttk.Frame, configs, ci_discord_bot: CIDiscordBot):
         super().__init__(chats_frame)
 
         self.configs = configs
+        self.ci_discord_bot = ci_discord_bot
         self.chats_frame = chats_frame
 
         mixer.init()
