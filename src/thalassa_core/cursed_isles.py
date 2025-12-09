@@ -165,8 +165,7 @@ class CursedIsles(ttk.Frame):
     def _start_ci(self, data: str = None):
         self.team: dict[str, PlayerData] = {}
         self.thralls = 0
-        self.frays_won = 0
-        self.current_fray = 0
+        self.current_fray = 1
         self.swabbies_on_board = 0
         self.rumble_active = False
         self.sf_active = False
@@ -176,7 +175,7 @@ class CursedIsles(ttk.Frame):
         
 
     def _stop_ci(self, data: str = None):
-        pass
+        self.ci_in_progress = False
 
 
     def _start_forage(self, data: str = None):
@@ -188,7 +187,7 @@ class CursedIsles(ttk.Frame):
         self.timer.set_uses_duration(True)
         self.timer.set_max_duration(120000)
         self.timer.start()
-        self.frays_won += 1
+        self.current_fray += 1
         self.timer.set_warning_sound(
             None, 
             self.configs.forage_warning_lead,

@@ -84,34 +84,41 @@ class Homunculus(ttk.Frame):
             )
 
     def _build_hom_frame(self):
-        # --- Top Buttons ---
-        btn_frame = ttk.Frame(self.hom_frame)
-        btn_frame.pack(side="top", fill="x", pady=5)
-        
-        # Keep standard styles for utility buttons
-        copy_btn = ttk.Button(btn_frame, text="Copy", bootstyle="secondary", command=self._copy_to_clipboard)
-        copy_btn.pack(side="left", padx=5)
-        
-        reset_btn = ttk.Button(btn_frame, text="Reset", bootstyle="secondary", command=self.reset_homu_colours)
-        reset_btn.pack(side="left", padx=5)
+        """Construct the Homunculus Counter Frame UI."""
 
         # --- Main Content Area ---
         content_frame = ttk.Frame(self.hom_frame)
         content_frame.pack(side="top", expand=True, fill="both", padx=10, pady=10)
+        content_frame.columnconfigure(0, weight=1, uniform="group1")
+        content_frame.columnconfigure(1, weight=1, uniform="group1")
 
-        # 1. Build Sword Buttons (Left)
+        # --- Utility Buttons ---
+        utility_frame = ttk.Frame(content_frame)
+        utility_frame.grid(row=0, column=0, sticky="ew", padx=5, pady=(0, 5))
+        
+        # Split this cell into 2 equal parts
+        utility_frame.columnconfigure(0, weight=1, uniform="group2")
+        utility_frame.columnconfigure(1, weight=1, uniform="group2")
+
+        copy_btn = ttk.Button(utility_frame, text="Copy", bootstyle="secondary", command=self._copy_to_clipboard)
+        copy_btn.grid(row=0, column=0, sticky="ew", padx=(0, 2))
+        
+        reset_btn = ttk.Button(utility_frame, text="Reset", bootstyle="secondary", command=self.reset_homu_colours)
+        reset_btn.grid(row=0, column=1, sticky="ew", padx=(2, 0))
+
+        # --- Build Sword Buttons (Left) ---
         sword_container = ttk.Labelframe(content_frame, text="Sword Count", padding=10)
-        sword_container.grid(row=0, column=0, sticky="nsew", padx=5)
+        sword_container.grid(row=1, column=0, sticky="nsew", padx=5)
 
         for colour in self.HOM_TRANSLATIONS.keys():
-            # Use the custom style we generated: e.g. "Red.TButton"
+            # Use the custom style generated: e.g. "Red.TButton"
             custom_style = f"{colour.title()}.TButton"
 
             btn = ttk.Button(
                 sword_container, 
                 text=f"{colour.title()}: 0", 
                 style=custom_style,
-                width=10,
+                width=12,
                 command=partial(self._increment_hom, colour, 1) 
             )
             btn.pack(pady=2, padx=5, fill="x")
@@ -122,21 +129,21 @@ class Homunculus(ttk.Frame):
 
             self.sword_buttons[colour] = btn
 
-        # 2. Build Drop Rectangles (Right)
+        # --- Build Drop Rectangles (Right) ---
         drop_container = ttk.Labelframe(content_frame, text="Drop Totals", padding=10)
-        drop_container.grid(row=0, column=1, sticky="nw", padx=5)
+        drop_container.grid(row=1, column=1, sticky="nsew", padx=5)
 
         for colour in self.HOM_DROP_COLOURS.keys():
             # Use the custom label style: e.g. "Red.TLabel"
-            custom_lbl_style = f"{colour.title()}.TLabel"
+            custom_style = f"{colour.title()}.TButton"
             
-            lbl = ttk.Label(
+            lbl = ttk.Button(
                 drop_container, 
                 text=f"{colour.title()}: 0", 
-                style=custom_lbl_style,
-                width=10
+                style=custom_style,
+                width=12
             )
-            lbl.pack(pady=2, padx=5, fill="x", ipady=5)
+            lbl.pack(pady=2, padx=5, fill="x")
             
             self.drop_labels[colour] = lbl
 
@@ -191,7 +198,7 @@ class Homunculus(ttk.Frame):
             target_true = self._translate_hom_colour(target)
         else:
             target_true = None
-        hom_count = "/ve ."
+        hom_count = "/ve Homunculus Count:"
         sorted_hom_colours = dict(sorted(self.HOM_DROP_COLOURS.items(), key=lambda item: item[1], reverse=True))
         for colour in sorted_hom_colours:
             count = sorted_hom_colours[colour]
@@ -204,7 +211,7 @@ class Homunculus(ttk.Frame):
         
 
 if __name__ == "__main__":
-    # Initialize with a basic theme, but our custom styles will override the buttons
+    # Initialize with a basic theme, but custom styles will override the buttons
     root = ttk.Window(themename="litera") 
     root.title("Homunculus Counter")
     
