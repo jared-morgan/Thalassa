@@ -31,15 +31,16 @@ class Rumble(ttk.Frame):
         }
 
         self._load_rumble_dictionary()
-        self.set_start_time()
+        # self.set_start_time()
 
         self._build_ui()
-        self._update_display()
+        # self._update_display()
 
 
     def set_start_time(self):
         self.start_time = time.monotonic()
         self.set_rumble_active(True)
+        self._update_display()
 
     def _calc_minutes_passed(self):
         time_passed = time.monotonic() - self.start_time
@@ -96,7 +97,7 @@ class Rumble(ttk.Frame):
         else: 
             self._draw_rumble_table()
 
-        self.after(60001, self._update_display)
+        self.after(60000, self._update_display) # Only updates the display every minute
 
     
     def set_rumble_active(self, active: bool):

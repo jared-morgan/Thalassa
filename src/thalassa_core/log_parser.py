@@ -22,9 +22,9 @@ class LogParser():
         self.BUY_STRINGS = ["buy", "[b]", "wtb", "lf", "looking"]
 
         self.LOG_EVENT_PATTERNS = [
-            ("Entering game data.BoxingObject", "Cursed Isles"), # Start of Rumble
+            ("Reporting ready data.BoxingObject:", "Cursed Isles"), # Start of Rumble
             ("replaced=class com.threerings.piracy.puzzle.boxing.client.BoxingPanel", "Cursed Isles"), # End of Rumble
-            ("Entering game data.SwordObject", "Cursed Isles"), # Start of SF
+            ("Reporting ready data.SwordObject", "Cursed Isles"), # Start of SF
             ("replaced=class com.threerings.piracy.puzzle.sword.client.SwordPanel", "Cursed Isles"), # End of SF
             ("Setting place view com.threerings.yohoho.sea.seamonster.cursed.client.GauntletScenePanel", "Cursed Isles"), # Start of CI
             ("Disabling skirmish environment mod [mod=dark_seas]", "Cursed Isles"), # End of CI
@@ -119,7 +119,7 @@ class LogParser():
             for line in new_data.splitlines():
                 for pattern, mode in self.LOG_EVENT_PATTERNS:
                     if pattern in line:
-                        print(F"Pattern matched: {pattern}")
+                        # print(F"Pattern matched: {pattern}")
                         self._emit(mode=mode, data=line)
 
         # Update the last read size
@@ -149,7 +149,7 @@ class LogParser():
 
     def apply_custom_chatlog_filters(self, line): #TODO add ability to click to copy pirates name to clipboard
         line_lower = line.lower()
-        buy_and_sell_split = False
+        
         buy_parts = []
         sell_parts = []
 
@@ -162,6 +162,8 @@ class LogParser():
             # 1. Check if the filter is enabled
             if not entry.on_off:
                 continue
+
+            buy_and_sell_split = False
 
             # 2. Channel Check (Preserving original logic for log format parsing)
             # Assuming entry.channel is a string like "trade", "global", etc.

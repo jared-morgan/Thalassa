@@ -3,6 +3,7 @@ import ttkbootstrap as ttk
 from tkinter import filedialog
 import pygame.mixer as mixer
 from pathlib import Path
+import asyncio
 
 from thalassa_core.configs import SearchEntry
 from thalassa_core.tkinter_widgets import ScrollableFrame
@@ -296,10 +297,19 @@ class ChatsTab(ttk.Frame):
         scrollable_output = ScrollableFrame(output_frame)
         scrollable_output.pack(fill="both", expand=True)
 
-    def update_output(self, line_of_text: str, *args, key: str | None=None, **kwargs):
-        if key is not None:
-            self._play_filter_sound(key)
+    def update_output(self, text: str, *args, key: str | None=None, **kwargs):
+        print()
+        if key == None:
+            return
         
+        if self.configs.search_strings[key].name == "Buying CI Map":
+            if "] " in text:
+                cleaned_text = text.split("] ", 1)[1]
+            else:
+                cleaned_text = text
+            self.ci_discord_bot.send_trade_from_external(cleaned_text)
+        
+        self._play_filter_sound(key)        
 
     def _play_filter_sound(self, key: str):
         """Checks if a sound attached to a filter ought to play"""

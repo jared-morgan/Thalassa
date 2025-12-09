@@ -20,6 +20,7 @@ class CIDiscordBot:
         # self.MAP_TRADING_CHANNEL_ID = 592238131978174475
 
         self.load_discord_token()
+        self.loop = None 
 
         # Test Server channels
         self.SCOUTED_CHANNEL_ID = 1419043075715498129
@@ -44,8 +45,15 @@ class CIDiscordBot:
 
         # Bind events
         self.bot.event(self.on_ready)
-
-        self.run_sweep()
+    
+    def run_bot_threaded(self):
+        """Run this method inside the separate thread."""
+        if not self.load_discord_token():
+            logging.warning("No Token found")
+            return
+        
+        # This blocks the THREAD, not the GUI
+        self.bot.run(self.token, log_handler=None, log_level=logging.INFO)
 
     async def safe_delete_message(self, message, reason=""):
         """Delete a message safely with logging."""
@@ -56,9 +64,9 @@ class CIDiscordBot:
             logging.info(f"Deleted message {message.id} from {message.author.display_name} {reason}")
             await asyncio.sleep(1)  # Avoid rate limits
         except discord.Forbidden:
-            logging.info("Missing permission to delete messages.")
+            logging.error("Missing permission to delete messages.")
         except discord.HTTPException as e:
-            logging.info(f"Failed to delete message: {e}")
+            logging.error(f"Failed to delete message: {e}")
 
     async def archive_message(self, message):
         """Send a copy of the message and its attachments to the archive channel."""
@@ -74,7 +82,7 @@ class CIDiscordBot:
             await archive_channel.send(content, files=files)
             logging.info(f"Archived message {message.id} from {message.author.display_name}")
         except discord.HTTPException as e:
-            logging.warning(f"Failed to archive message {message.id}: {e}")
+            logging.error(f"Failed to archive message {message.id}: {e}")
 
     async def check_old_messages(self):
         """Check and delete old messages in the scouted channel."""
@@ -105,27 +113,24 @@ class CIDiscordBot:
                 await self.safe_delete_message(message, "(map dusted)")
 
     async def on_ready(self):
-        logging.info(f"{self.bot.user} is online and sweeping old messages.")
+        logging.info(f"{self.bot.user} is online.")
+        # We capture the loop here to be safe
+        self.loop = asyncio.get_running_loop()
+        
         await self.check_old_messages()
-        logging.info(f"{self.bot.user} finished sweeping. Going offline.")
-        await self.bot.close()
+        logging.info(f"Sweep complete. Bot is ready for commands.")
 
-    
     async def new_trade_message(self, message: str):
-        """Sends a new trade message to the MAP_TRADING_CHANNEL."""
+        """The actual async function that sends the message."""
         channel = self.bot.get_channel(self.MAP_TRADING_CHANNEL_ID)
         if channel is None:
             logging.warning("Trade channel not found!")
             return
-
         try:
             await channel.send(content=message)
-            logging.info(f"Sent trade message to channel {channel.name}")
-        except discord.Forbidden:
-            logging.warning("Missing permission to send messages in the trade channel.")
-        except discord.HTTPException as e:
-            logging.warning(f"Failed to send trade message: {e}")
-
+            logging.info(f"Sent trade message: {message}")
+        except Exception as e:
+            logging.error(f"Failed to send trade message: {e}")
 
     def run_sweep(self):
         if not self.token:
@@ -133,18 +138,15 @@ class CIDiscordBot:
             return
         self.bot.run(self.token, log_handler=None, log_level=logging.INFO)
 
-    def set_discord_token(self, token: str) -> None:
-        """Sets the Discord token as an environment variable for this process."""
-        logging.info(F"Set a new discord token in the environment variables")
-        os.environ["DISCORD_TOKEN"] = token
-        self.load_discord_token()
-
-    def load_discord_token(self):
-        load_dotenv()  # loads .env file into os.environ
-
-        self.token = os.getenv("DISCORD_TOKEN")
-        if not self.token:
-            logging.warning("No DISCORD_TOKEN found in environment variables.")
+    def send_trade_from_external(self, message: str):
+        """
+        THREAD-SAFE BRIDGE: Call this from your GUI (Tkinter).
+        It schedules the async task on the bot's event loop.
+        """
+        if self.bot.is_ready() and self.loop:
+            asyncio.run_coroutine_threadsafe(self.new_trade_message(message), self.loop)
+        else:
+            logging.warning("Bot is not ready yet; cannot send message.")
 
     def set_discord_token(self, token: str) -> None:
         """Store a Discord token at the system level."""
@@ -177,7 +179,7 @@ class CIDiscordBot:
 
             logging.info("Discord token stored at system level.")
         except Exception as e:
-            logging.warning(f"Failed to persist token at system level: {e}")
+            logging.error(f"Failed to persist token at system level: {e}")
 
     def load_discord_token(self):
         """Load the Discord token from environment variables."""
@@ -186,7 +188,6 @@ class CIDiscordBot:
             logging.warning("No DISCORD_TOKEN found in environment variables.")
         return self.token
     
-
 
 if __name__ == "__main__":
     ci_discord_bot = CIDiscordBot()

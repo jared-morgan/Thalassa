@@ -5,6 +5,8 @@ import os
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 import pygame.mixer
+import threading
+import time
 
 from thalassa_core.configs import Configs, SearchEntry
 from thalassa_core.log_parser import LogParser
@@ -18,6 +20,8 @@ class ThalassaGUI:
     def __init__(self, configs):
 
         self.ci_discord_bot = CIDiscordBot()
+        self.bot_thread = threading.Thread(target=self.start_discord_bot, daemon=True)
+        self.bot_thread.start()
 
         self.configs = configs
         self.log_parser = LogParser(self.handle_log_event, self.configs)
@@ -37,6 +41,15 @@ class ThalassaGUI:
         self._create_tabs()
 
         self._scan_files()
+
+    def start_discord_bot(self):
+        """This runs inside the separate thread"""
+        print("Starting Discord Bot in background...")
+        # This calls the blocking run method we defined in Part 1
+        self.ci_discord_bot.run_bot_threaded()
+
+    def send_dicord_bot_command(self):
+        self.ci_discord_bot.send_trade_from_external("This is a test message from Thalassa GUI!")
 
     def _on_closing(self):
         # Save GUI state
@@ -83,6 +96,7 @@ class ThalassaGUI:
 
 
     def handle_log_event(self, mode, data, *args, **kwargs):
+        # print(F"Handling log event: {mode = }, {data = }, {args = }, {kwargs = }")
         """GUI responds to LogParser events."""
         if not self.current_mode_frame:
             print("No mode frame exists")

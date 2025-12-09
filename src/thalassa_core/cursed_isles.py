@@ -34,9 +34,9 @@ class CursedIsles(ttk.Frame):
         self.rumble = Rumble(self.rumble_frame, self.configs)
 
         self.LOG_EVENT_PATTERNS = [
-            ("Entering game data.BoxingObject", self._start_rumble),
+            ("Reporting ready data.BoxingObject:", self._start_rumble),
             ("replaced=class com.threerings.piracy.puzzle.boxing.client.BoxingPanel", self._stop_rumble),
-            ("Entering game data.SwordObject", self._start_sf),
+            ("Reporting ready data.SwordObject", self._start_sf),
             ("replaced=class com.threerings.piracy.puzzle.sword.client.SwordPanel", self._stop_sf),
             ("Setting place view com.threerings.yohoho.sea.seamonster.cursed.client.GauntletScenePanel", self._start_ci),
             ("Disabling skirmish environment mod [mod=dark_seas]", self._stop_ci),
@@ -138,7 +138,8 @@ class CursedIsles(ttk.Frame):
     def _stop_rumble(self, data: str = None):
         self.rumble_active = False
         self.rumble.set_rumble_active(False)
-        self.timer_frame.pack_forget()
+        if not self.forage_active:
+            self.timer_frame.pack_forget()
         self.rumble_frame.pack_forget()
 
 
@@ -156,7 +157,8 @@ class CursedIsles(ttk.Frame):
     
     def _stop_sf(self, data: str = None):
         self.sf_active = False
-        self.timer_frame.pack_forget()
+        if not self.forage_active:
+            self.timer_frame.pack_forget()
         self.hom_frame.pack_forget()
             
 
@@ -178,7 +180,7 @@ class CursedIsles(ttk.Frame):
 
 
     def _start_forage(self, data: str = None):
-        self._stop_forage()
+        self._stop_sf()
         self._stop_rumble()
         self.forage_active = True
         self.timer_frame.pack(fill="both", expand=True)

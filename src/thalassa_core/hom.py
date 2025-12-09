@@ -111,7 +111,7 @@ class Homunculus(ttk.Frame):
                 sword_container, 
                 text=f"{colour.title()}: 0", 
                 style=custom_style,
-                width=20,
+                width=10,
                 command=partial(self._increment_hom, colour, 1) 
             )
             btn.pack(pady=2, padx=5, fill="x")
@@ -134,7 +134,7 @@ class Homunculus(ttk.Frame):
                 drop_container, 
                 text=f"{colour.title()}: 0", 
                 style=custom_lbl_style,
-                width=20
+                width=10
             )
             lbl.pack(pady=2, padx=5, fill="x", ipady=5)
             
