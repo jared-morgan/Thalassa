@@ -60,7 +60,7 @@ class CursedIsles(ttk.Frame):
     def _reset_enemy_counts(self):
         self.enemy_counts = {
             "Enlightened One": 0, "Vargas The Mad": 0, "Zombie": 0,
-            "Homunculus": 1, "Cultist": 0, "Total": 0
+            "Homunculus": 0, "Cultist": 0, "Total": 0
         }
     
     def _reset_ally_counts(self):
