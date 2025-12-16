@@ -46,7 +46,7 @@ class CursedIsles(ttk.Frame):
 
 
     def _strip_names(self, data: str) -> list:
-        data = "2025/11/25 19:20:11:789 INFO ak.doLog: Reporting ready data.BoxingObject:344547(Qrk, Qrk's Thrall, Jice, Jice's Thrall, Rudis, Rudis's Thrall, Vackert, Vackert's Thrall, Amizing, Amizing's Thrall, Karthika, Karthika's Thrall, Honeyy, Honeyy's Thrall, Enlightened One, Subjugated Zombie, Controlled Zombie, Subjugated Zombie, Dominated Zombie, Ensnared Zombie, Dominated Zombie):0."
+        # data = "2025/11/25 19:20:11:789 INFO ak.doLog: Reporting ready data.BoxingObject:344547(Qrk, Qrk's Thrall, Jice, Jice's Thrall, Rudis, Rudis's Thrall, Vackert, Vackert's Thrall, Amizing, Amizing's Thrall, Karthika, Karthika's Thrall, Honeyy, Honeyy's Thrall, Enlightened One, Subjugated Zombie, Controlled Zombie, Subjugated Zombie, Dominated Zombie, Ensnared Zombie, Dominated Zombie):0."
         try:
             start = data.index("(") + 1
             end = data.index(")")
@@ -85,6 +85,7 @@ class CursedIsles(ttk.Frame):
         self._reset_all_fray_teams()
         
         names = self._strip_names(data)
+        print(F"{names = }")
         
         enemies_list = [" Zombie", "Enlightened One", "Vargas The Mad", " Homunculus", " Cultist"]
 
@@ -144,7 +145,9 @@ class CursedIsles(ttk.Frame):
 
 
     def _start_sf(self, data: str = None):
+        print(F"{data = }")
         self._start_general_fray(data)
+        print(self.enemy_counts)
         if self.enemy_counts["Homunculus"] > 0:
             self.homunculus.reset_homu_colours()
             self.hom_frame.pack(fill="both", expand=True)
